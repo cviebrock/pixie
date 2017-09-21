@@ -3,25 +3,85 @@
 /**
  * Load environment vars
  */
-require('dotenv').config();
+const PIXIE = require('dotenv').config().parsed;
+console.log(PIXIE);
 
 /**
  * Module dependencies.
  */
 
-let path = require('path'),
+const path = require('path'),
     express = require('express'),
-    app = express();
+    md5 = require('md5');
 
-let htmlPath = process.env.PATH || path.join(__dirname, 'public');
+let app = express();
 
-app.use(express.static(htmlPath));
+/**
+ * Initialize the path for existing assets
+ */
 
-let port = process.env.PORT || '3000';
+let htmlPath = PIXIE.PATH || path.join(__dirname, 'public');
+console.log('htmlPath: ' + htmlPath);
+
+app.use(express.static(htmlPath, {
+    index: false,
+    maxAge: 0,
+    fallthrough: true
+}));
 
 
+/**
+ * Look for paths that have resizing data
+ */
+app.get(/\/(.*)~~(\d{1,4})x(\d{1,4})(~[0-9a-f]{8})?\.(.*)/, function (req, res) {
+
+    let {0: file, 1: width, 2: height, 3: hash, 4: extension} = req.params;
+
+    if (typeof hash === 'undefined' && PIXIE.HASH) {
+        log(req, 403, 'Missing hash');
+        res.sendStatus(403).end();
+    } else {
+
+        file += '.' + extension;
+
+        let generatedHash = '~' + md5(file + height + width + PIXIE.HASH).substr(-8);
+        if (generatedHash !== hash) {
+            log(req, 403, 'Invalid hash');
+            res.sendStatus(403).end();
+        }
+    }
+
+    console.log('resize data found', file, height, width, hash);
+});
+
+/**
+ * Otherwise, abort
+ */
+
+app.get('*', function (req, res) {
+    log(req, 404);
+    res.sendStatus(404).end();
+});
+
+/**
+ * Start the server
+ */
+
+let port = PIXIE.PORT || 3000;
 let server = app.listen(port, function () {
     let host = 'localhost',
         port = server.address().port;
     console.log('Pixie - listening on http://' + host + ':' + port + '/');
 });
+
+
+function log(req, status, message) {
+    console.log(
+        new Date().toISOString(),
+        req.ip,
+        req.originalUrl,
+        req.get('Referer') || '-',
+        '[' + status + ']',
+        message
+    );
+}
