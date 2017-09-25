@@ -22,10 +22,15 @@ function PixieException(message, status) {
 const path = require('path'),
     express = require('express'),
     md5 = require('md5'),
-    sharp = require('sharp'),
-    fs = require('fs');
+    sharp = require('sharp');
 
 let app = express();
+
+
+const outputFormats = {
+    'jpg': 'jpeg',
+    'webp': 'webp',
+};
 
 /**
  * Initialize the path for existing assets
@@ -45,30 +50,45 @@ app.get(/\/(.*)~~(\d{1,4})x(\d{1,4})(~[0-9a-f]+)?\.(.*)/, function (req, res) {
 
     try {
 
-        const {0: file, 1: width, 2: height, 3: hash, 4: extension} = req.params;
+        let {0: file, 1: width, 2: height, 3: hash, 4: extension} = req.params;
 
-        const generatedHash = validateHashing(file, extension, width, height, hash),
-            originalFile = file + '.' + extension,
+        // prevent resizing already resized images
+        if (file.indexOf('~~') !== -1) {
+            throw new PixieException('Duplicate resize forbidden', 404);
+        }
+
+        // check for new image format request
+        let newExtension = extension,
+            oldExtension = extension,
+            test = extension.split('.', 2);
+        if (test.length === 2) {
+            [oldExtension, newExtension] = test;
+        }
+
+        validateHashing(file, oldExtension, width, height, hash);
+
+        const originalFile = file + '.' + oldExtension,
             originalPath = path.join(htmlPath, originalFile),
-            resizedFile = file + '~~' + width + 'x' + height + generatedHash + '.' + extension,
+            resizedFile = req.originalUrl.substr(1),
             resizedPath = path.join(htmlPath, resizedFile);
 
-        const w = parseInt(width, 10) || null,
-            h = parseInt(height, 10) || null;
+        width = parseInt(width, 10) || null;
+        height = parseInt(height, 10) || null;
 
         sharp(originalPath)
-            .resize(w, h)
+            .resize(width, height)
+            .toFormat(outputFormats[newExtension])
             .toFile(resizedPath, function (err, info) {
                 if (err) {
                     throw new PixieException(err.message, 500);
                 }
-                log(req, 200, 'Created ' + info.size + ' bytes');
+                log(req, 200, 'Wrote ' + info.size + ' bytes');
                 res.sendFile(resizedPath);
             });
 
     } catch (e) {
         log(req, e.status, e.message);
-        return res.status(e.status).send(e.message).end();
+        return res.sendStatus(e.status).end();
     }
 });
 
@@ -85,9 +105,9 @@ app.get('*', (req, res) => {
  * Start the server
  */
 
-let port = PIXIE.PORT || 3000;
+const port = PIXIE.PORT || 3000;
 let server = app.listen(port, () => {
-    let host = 'localhost',
+    const host = 'localhost',
         port = server.address().port;
     console.log('Pixie server starting');
     console.log('Static asset path: ' + htmlPath);
@@ -100,7 +120,7 @@ let server = app.listen(port, () => {
 });
 
 
-function log(req, status, message) {
+const log = (req, status, message) => {
     if (typeof message === 'undefined') {
         message = '-';
     }
@@ -113,13 +133,13 @@ function log(req, status, message) {
         status,
         message
     );
-}
+};
 
-function validateHashing(file, extension, width, height, hash) {
+const validateHashing = (file, extension, width, height, hash) => {
 
     // if we aren't hashing, return nothing
     if (!PIXIE.HASH) {
-        return '';
+        return;
     }
 
     // if no has was provided, throw error
@@ -133,9 +153,7 @@ function validateHashing(file, extension, width, height, hash) {
 
     // confirm generated hash equals given one
     if (generatedHash !== hash) {
-        console.log('Expected hash: '+generatedHash);
-        throw new PixieException('Invalid hash', 403);
+        console.log('Expected hash: ' + generatedHash);
+        throw new PixieException('Invalid hash (expected ' + generatedHash + ')', 403);
     }
-
-    return generatedHash;
-}
+};
