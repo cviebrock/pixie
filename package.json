@@ -1,9 +1,13 @@
 {
   "name": "pixie",
-  "version": "0.0.0",
+  "description": "A simple, on-the-fly image resizing server written in NodeJS.",
+  "version": "0.1.0",
+  "license": "MIT",
   "private": true,
-  "scripts": {
-    "start": "node ./bin/pixie"
+  "author": {
+    "name": "Colin Viebrock",
+    "email": "colin@viebrock.ca",
+    "url": "http://viebrock.ca/"
   },
   "dependencies": {
     "dotenv": "^4.0.0",
@@ -12,5 +16,9 @@
     "md5": "^2.2.1",
     "path": "^0.12.7",
     "sharp": "^0.18.4"
-  }
+  },
+  "scripts": {
+    "start": "node ./bin/pixie"
+  },
+  "bin": "./bin/pixie"
 }
