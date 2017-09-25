@@ -2,6 +2,8 @@
 
 A simple, on-the-fly image resizing server written in NodeJS.
 
+> **NOTE**: Not production-ready yet, and my JS isn't the best so _caveat emptor_.
+
 
 
 ## Installation
@@ -84,8 +86,8 @@ If you have hashing enabled -- which you should! -- then the hash is added to
 the requested file name: 
 
 ```
-test_image~~160x90~d1c8b543.jpg
-test_image~~160x90~d1c8b543.jpg.webp
+test_image~~160x90~60609adb.jpg
+test_image~~160x90~60609adb.jpg.webp
 ```
 
 
@@ -136,7 +138,8 @@ versions.
 
 ## Copyright and License
 
-Pixie was written by [Colin Viebrock](http://viebrock.ca) and is released under 
-the [MIT License](LICENSE.md).
+[Pixie](https://github.com/cviebrock/pixie) was written by 
+[Colin Viebrock](http://viebrock.ca) and is released under the 
+[MIT License](LICENSE.md).
 
 Copyright (c) 2017 Colin Viebrock

@@ -12,10 +12,26 @@ const PIXIE = require('dotenv').config().parsed,
         this.name = 'PixieException';
         this.message = message;
         this.status = status;
+
+        return this;
     },
     outputFormats = {
         'jpg': 'jpeg',
         'webp': 'webp',
+    },
+    cropStrategies = {
+        'north': sharp.gravity.north,
+        'northeast': sharp.gravity.northeast,
+        'east': sharp.gravity.east,
+        'southeast': sharp.gravity.southeast,
+        'south': sharp.gravity.south,
+        'southwest': sharp.gravity.southwest,
+        'west': sharp.gravity.west,
+        'northwest': sharp.gravity.northwest,
+        'center': sharp.gravity.center,
+        'centre': sharp.gravity.centre,
+        'entropy': sharp.strategy.entropy,
+        'attention': sharp.strategy.attention,
     };
 
 /**
@@ -39,6 +55,8 @@ app.use(express.static(htmlPath, {
  * Look for paths that have resizing data
  */
 app.get(/\/(.*)~~(\d{1,4})x(\d{1,4})(~[0-9a-f]+)?\.(.*)/, function (req, res) {
+
+    const cropStrategy = PIXIE.RESIZE_STRATEGY || 'center';
 
     try {
 
@@ -69,6 +87,7 @@ app.get(/\/(.*)~~(\d{1,4})x(\d{1,4})(~[0-9a-f]+)?\.(.*)/, function (req, res) {
 
         sharp(originalPath)
             .resize(width, height)
+            .crop(cropStrategies[cropStrategy])
             .toFormat(outputFormats[newExtension])
             .toFile(resizedPath, function (err, info) {
                 if (err) {
@@ -103,7 +122,7 @@ let server = app.listen(port, () => {
         port = server.address().port;
     console.log('Pixie server starting');
     console.log('Static asset path: ' + htmlPath);
-    if (PIXIE.HASH) {
+    if (PIXIE.HASH_SECRET) {
         console.log('Enforce hashing:   enabled; length ' + PIXIE.HASH_LENGTH);
     } else {
         console.log('Enforce hashing:   disabled');
@@ -130,7 +149,7 @@ const log = (req, status, message) => {
 const validateHashing = (file, extension, width, height, hash) => {
 
     // if we aren't hashing, return nothing
-    if (!PIXIE.HASH) {
+    if (!PIXIE.HASH_SECRET) {
         return;
     }
 
@@ -141,7 +160,7 @@ const validateHashing = (file, extension, width, height, hash) => {
 
     const filename = file + '.' + extension,
         hashLength = -1 * (PIXIE.HASH_LENGTH || 8),
-        generatedHash = '~' + md5(filename + width + height + PIXIE.HASH).substr(hashLength);
+        generatedHash = '~' + md5(filename + width + height + PIXIE.HASH_SECRET).substr(hashLength);
 
     // confirm generated hash equals given one
     if (generatedHash !== hash) {
