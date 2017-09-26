@@ -67,7 +67,7 @@ app.use(express.static(htmlPath, {
 /**
  * Look for paths that have resizing data
  */
-app.get(/\/(.*)~~(\d{1,4})x(\d{1,4})(~[0-9a-f]+)?\.(.*)/, function (req, res) {
+app.get(/(.*)~~(\d{1,4})x(\d{1,4})(~[0-9a-f]+)?\.(.*)/, function (req, res) {
 
     const cropStrategy = PIXIE.config.resizeStrategy || 'center';
 
@@ -172,7 +172,7 @@ const validateHashing = (file, extension, width, height, hash) => {
     }
 
     const filename = file + '.' + extension,
-        generatedHash = '~' + md5(filename + width + height + PIXIE.config.hashSecret)
+        generatedHash = '~' + md5(filename + width + 'x' + height + PIXIE.config.hashSecret)
             .substr(-1 * PIXIE.config.hashLength);
 
     // confirm generated hash equals given one

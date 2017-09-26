@@ -105,9 +105,10 @@ test_image~~160x90~60609adb.jpg.webp
 You probably don't want Pixie to generate images of arbitrary sizes.  To prevent
 this, a hashing algorithm is implemented to verify that the requested image is
 valid.  The hash is the MD5 of the original file name, the new width and height 
-of the resized image, and the secret `HASH_KEY` configuration value.  This MD5 
-is then truncated to the rightmost number of characters as defined by 
-`HASH_LENGTH` (simply to keep file names a reasonable length).
+of the resized image (in a `WWWxHHH` formatted string), and the secret `HASH_KEY` 
+configuration value.  This hash is then truncated to the rightmost number of 
+characters as defined by `HASH_LENGTH` (simply to keep file names a reasonable 
+length).
 
 Some sample code (in PHP):
 
@@ -115,11 +116,11 @@ Some sample code (in PHP):
 define('HASH_KEY', 'SomeSecretString');
 define('HASH_LENGTH', 8);
 
-$file = 'test_image.jpg';
+$file = '/path/to/test_image.jpg';
 $newWidth = 160;
 $newHeight = 90;
 
-$hash = md5($file . $newWidth . $newHeight . HASH_KEY);
+$hash = md5($file . $newWidth . 'x' . $newHeight . HASH_KEY);
 $hash = substr($hash, -1 * HASH_LENGTH); 
 ```
 
