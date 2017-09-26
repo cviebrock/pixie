@@ -12,7 +12,7 @@ Get the source code (clone it, download a zip, whatever), then:
 
 ``` shell
 cd pixie
-cp .env.example .env
+cp pixie.config.json.example pixie.config.json
 yarn
 yarnpkg start
 ```
@@ -43,8 +43,8 @@ storage path of your other application that is using Pixie.
 
 #### HASH_KEY
 
-A random string that is used to generate image hashes, mitigating DOS attacks.  
-See [Hashing](#hashing) below for more details.  If left empty, then no hash 
+A random string that is used to generate image hashes, mitigating DOS attacks.  See 
+[Hashing](#hashing) below for more details.  If left empty, then no hash 
 protection is enforced.
 
 #### HASH_LENGTH
@@ -76,6 +76,14 @@ file:
 
 ```
 test_image~~160x90.jpg.webp
+```
+
+If you want to only specify one of the dimensions (width or height) and have 
+Pixie resize the image while maintaining aspect ratio, then just set the other 
+dimension as zero:
+
+```
+test_image~~320x0.jpg
 ```
 
 Generated files are served and also stored in the `ROOT` directory, so that 

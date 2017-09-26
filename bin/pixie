@@ -1,10 +1,23 @@
 #!/usr/bin/env node
 
 /**
- * Load environment vars, dependencies, and set up exceptions
+ * Load configuration
  */
-const PIXIE = require('dotenv').config().parsed,
-    path = require('path'),
+const cosmicconfig = require('cosmiconfig');
+const PIXIE = cosmicconfig('pixie', {sync: true, rc: 'pixie.config.json'})
+    .load(__dirname);
+
+if (PIXIE === null) {
+    console.error('No pixie.config.json file found!');
+    process.exit(1);
+}
+
+console.info('Loading configuration from', PIXIE.filepath);
+
+/**
+ * Load dependencies, and set up exceptions
+ */
+const path = require('path'),
     express = require('express'),
     md5 = require('md5'),
     sharp = require('sharp'),
@@ -44,7 +57,7 @@ const app = express();
  * Initialize the path for existing assets
  */
 
-const htmlPath = path.normalize(PIXIE.ROOT || path.join(__dirname, '..', 'public'));
+const htmlPath = path.normalize(PIXIE.config.root || path.join(__dirname, '..', 'public'));
 app.use(express.static(htmlPath, {
     index: false,
     maxAge: 0,
@@ -56,7 +69,7 @@ app.use(express.static(htmlPath, {
  */
 app.get(/\/(.*)~~(\d{1,4})x(\d{1,4})(~[0-9a-f]+)?\.(.*)/, function (req, res) {
 
-    const cropStrategy = PIXIE.RESIZE_STRATEGY || 'center';
+    const cropStrategy = PIXIE.config.resizeStrategy || 'center';
 
     try {
 
@@ -116,14 +129,14 @@ app.get('*', (req, res) => {
  * Start the server
  */
 
-const port = PIXIE.PORT || 3000;
+const port = PIXIE.config.port || 3000;
 let server = app.listen(port, () => {
     const host = 'localhost',
         port = server.address().port;
     console.log('Pixie server starting');
     console.log('Static asset path: ' + htmlPath);
-    if (PIXIE.HASH_SECRET) {
-        console.log('Enforce hashing:   enabled; length ' + PIXIE.HASH_LENGTH);
+    if (PIXIE.config.hashSecret) {
+        console.log('Enforce hashing:   enabled; length ' + PIXIE.config.hashLength);
     } else {
         console.log('Enforce hashing:   disabled');
     }
@@ -149,7 +162,7 @@ const log = (req, status, message) => {
 const validateHashing = (file, extension, width, height, hash) => {
 
     // if we aren't hashing, return nothing
-    if (!PIXIE.HASH_SECRET) {
+    if (!PIXIE.config.hashSecret) {
         return;
     }
 
@@ -159,12 +172,11 @@ const validateHashing = (file, extension, width, height, hash) => {
     }
 
     const filename = file + '.' + extension,
-        hashLength = -1 * (PIXIE.HASH_LENGTH || 8),
-        generatedHash = '~' + md5(filename + width + height + PIXIE.HASH_SECRET).substr(hashLength);
+        generatedHash = '~' + md5(filename + width + height + PIXIE.config.hashSecret)
+            .substr(-1 * PIXIE.config.hashLength);
 
     // confirm generated hash equals given one
     if (generatedHash !== hash) {
-        console.log('Expected hash: ' + generatedHash);
         throw PixieException('Invalid hash (expected ' + generatedHash + ')', 403);
     }
 };

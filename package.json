@@ -10,6 +10,7 @@
     "url": "http://viebrock.ca/"
   },
   "dependencies": {
+    "cosmiconfig": "^3.0.1",
     "dotenv": "^4.0.0",
     "express": "^4.15.4",
     "fs": "^0.0.1-security",
