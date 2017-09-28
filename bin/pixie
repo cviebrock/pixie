@@ -21,7 +21,7 @@ const path = require('path'),
     express = require('express'),
     md5 = require('md5'),
     sharp = require('sharp'),
-    httpServerName = 'Pixie/0.1.0',
+    packageVersion = process.env.npm_package_version,
     PixieException = (message, status) => {
         this.name = 'PixieException';
         this.message = message;
@@ -53,7 +53,7 @@ const path = require('path'),
  */
 
 const app = express();
-
+app.set('x-powered-by', false);
 /**
  * Initialize the path for existing assets
  */
@@ -69,7 +69,7 @@ app.use(express.static(htmlPath, {
  * Look for paths that have resizing data
  */
 app.get(/(.*)~~(\d{1,4})x(\d{1,4})(~[0-9a-f]+)?\.(.*)/, function (req, res) {
-    res.header('Server', httpServerName);
+    res.header('X-Pixie', packageVersion);
 
     const cropStrategy = PIXIE.config.resizeStrategy || 'center';
 
@@ -123,7 +123,7 @@ app.get(/(.*)~~(\d{1,4})x(\d{1,4})(~[0-9a-f]+)?\.(.*)/, function (req, res) {
  */
 
 app.get('*', (req, res) => {
-    res.header('Server', httpServerName);
+    res.header('X-Pixie', packageVersion);
     log(req, 404);
     return res.sendStatus(404).end();
 });
